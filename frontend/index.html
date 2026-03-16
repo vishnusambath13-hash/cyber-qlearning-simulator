@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CYBER BATTLE // Q-LEARNING SIMULATOR</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ======================================================
+       ROOT HUD GRID
+       Three columns: [ATTACKER] [CENTER] [DEFENDER]
+       Top bar + bottom bar span full width.
+  ====================================================== -->
+  <div class="hud">
+
+    <!-- ====================================================
+         TOP BAR
+    ==================================================== -->
+    <header class="hud__topbar topbar">
+      <!-- Left: status dot + title -->
+      <div class="topbar__left">
+        <span class="status-indicator status-indicator--standby"
+              id="statusDot"></span>
+        <span class="hud-title">CYBER BATTLE // Q-LEARNING</span>
+      </div>
+
+      <!-- Center: round counter + health readout -->
+      <div class="topbar__center">
+        <div class="topbar__sep"></div>
+
+        <div class="round-readout">
+          <span class="round-readout__label">ROUND</span>
+          <span class="round-readout__value mono" id="roundNum">000</span>
+        </div>
+
+        <div class="topbar__sep"></div>
+
+        <div class="health-readout">
+          <span class="health-readout__label">SYS HEALTH</span>
+          <span class="health-readout__value hud-number"
+                id="healthReadout">100%</span>
+        </div>
+
+        <div class="topbar__sep"></div>
+
+        <div class="round-readout">
+          <span class="round-readout__label">SESSION</span>
+          <span class="round-readout__value mono"
+                style="font-size:11px" id="sessionId">—</span>
+        </div>
+      </div>
+
+      <!-- Right: mode label -->
+      <div class="topbar__right">
+        <span class="mode-label" id="modeLabel">STANDBY</span>
+        <span class="status-indicator status-indicator--standby"
+              id="modeDot"></span>
+      </div>
+    </header>
+
+
+    <!-- ====================================================
+         LEFT COLUMN — ATTACKER AGENT
+    ==================================================== -->
+    <aside class="hud__left">
+
+      <!-- Agent info panel -->
+      <div class="panel panel--atk panel--atk-agent">
+        <span class="corner corner--tl"></span>
+        <span class="corner corner--tr"></span>
+        <span class="corner corner--bl"></span>
+        <span class="corner corner--br"></span>
+
+        <div class="panel-title panel-title--atk">
+          <span class="panel-title__dot"></span>
+          ATTACKER AGENT
+        </div>
+
+        <!-- Current action display -->
+        <div class="action-display action-display--atk"
+             id="atkActionDisplay">
+          <span class="action-display__label">CURRENT ATTACK</span>
+          <span class="action-display__value mono"
+                id="atkActionVal">STANDBY</span>
+        </div>
+
+        <!-- Stat row -->
+        <div class="stat-row">
+          <div class="stat-box">
+            <span class="stat-box__value text-atk"
+                  id="atkBreaches">0</span>
+            <span class="stat-box__label">BREACHES</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-box__value"
+                  id="atkRate">0%</span>
+            <span class="stat-box__label">SUCCESS</span>
+          </div>
+        </div>
+
+        <!-- Probability bars -->
+        <span class="section-label">ATTACK PROBABILITY</span>
+        <div class="prob-bars" id="atkProbBars">
+          <!-- Populated by app.js -->
+        </div>
+      </div>
+
+      <!-- Q-table heatmap panel -->
+      <div class="panel panel--atk panel--atk-qtable">
+        <span class="corner corner--tl"></span>
+        <span class="corner corner--tr"></span>
+        <span class="corner corner--bl"></span>
+        <span class="corner corner--br"></span>
+
+        <div class="panel-title panel-title--atk">
+          <span class="panel-title__dot"></span>
+          Q-TABLE // ATTACKER
+        </div>
+
+        <div class="qtable-wrap">
+          <div class="qtable" id="atkQtable">
+            <!-- Populated by app.js -->
+          </div>
+          <div class="qtable-legend">
+            <span class="qtable-legend__label">LOW</span>
+            <div class="qtable-legend__bar qtable-legend__bar--atk"></div>
+            <span class="qtable-legend__label">HIGH</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attack distribution bar chart -->
+      <div class="panel panel--atk panel--atk-chart">
+        <span class="corner corner--tl"></span>
+        <span class="corner corner--tr"></span>
+        <span class="corner corner--bl"></span>
+        <span class="corner corner--br"></span>
+
+        <div class="panel-title panel-title--atk">
+          <span class="panel-title__dot"></span>
+          ATTACK DISTRIBUTION
+        </div>
+
+        <div class="bar-chart" id="atkChart">
+          <!-- Populated by app.js -->
+        </div>
+      </div>
+
+    </aside>
+
+
+    <!-- ====================================================
+         CENTER COLUMN
+    ==================================================== -->
+    <main class="hud__center">
+
+      <!-- Health bar -->
+      <div class="panel panel--sys panel--health">
+        <div class="health-bar">
+          <span class="health-bar__label">TARGET SYSTEM HEALTH</span>
+          <div class="health-bar__track">
+            <div class="health-bar__fill health-bar__fill--high"
+                 id="healthFill"
+                 style="width:100%">
+              <span class="health-bar__text" id="healthText">100%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Battlefield -->
+      <div class="panel panel--sys panel--battlefield"
+           id="battlefieldPanel">
+
+        <div class="battlefield" id="battlefield">
+
+          <!-- Grid layers -->
+          <div class="battlefield__grid battlefield__grid--fine"></div>
+          <div class="battlefield__grid battlefield__grid--bold"></div>
+
+          <!-- Radar sweep arm -->
+          <div class="battlefield__radar"></div>
+
+          <!-- Status badge -->
+          <div class="bf-status-badge bf-status-badge--idle"
+               id="bfStatusBadge">IDLE</div>
+
+          <!-- Six port nodes orbiting the target -->
+          <div class="port-node port-node--http" id="port-http">
+            <span class="port-node__label">HTTP</span>
+            <span class="port-node__port">:80</span>
+          </div>
+          <div class="port-node port-node--https" id="port-https">
+            <span class="port-node__label">HTTPS</span>
+            <span class="port-node__port">:443</span>
+          </div>
+          <div class="port-node port-node--ssh" id="port-ssh">
+            <span class="port-node__label">SSH</span>
+            <span class="port-node__port">:22</span>
+          </div>
+          <div class="port-node port-node--ftp" id="port-ftp">
+            <span class="port-node__label">FTP</span>
+            <span class="port-node__port">:21</span>
+          </div>
+          <div class="port-node port-node--smtp" id="port-smtp">
+            <span class="port-node__label">SMTP</span>
+            <span class="port-node__port">:25</span>
+          </div>
+          <div class="port-node port-node--dns" id="port-dns">
+            <span class="port-node__label">DNS</span>
+            <span class="port-node__port">:53</span>
+          </div>
+
+          <!-- Target node — centered -->
+          <div class="target-node">
+            <div class="target-node__rings">
+
+              <!-- Outer rotating hex ring -->
+              <svg class="target-node__ring target-node__ring--outer"
+                   viewBox="0 0 100 100"
+                   fill="none"
+                   xmlns="http://www.w3.org/2000/svg">
+                <polygon
+                  points="50,5 91,27.5 91,72.5 50,95 9,72.5 9,27.5"
+                  stroke="rgba(0,229,255,0.40)"
+                  stroke-width="1"
+                  fill="none" />
+              </svg>
+
+              <!-- Mid counter-rotating hex ring -->
+              <svg class="target-node__ring target-node__ring--mid"
+                   viewBox="0 0 100 100"
+                   fill="none"
+                   xmlns="http://www.w3.org/2000/svg">
+                <polygon
+                  points="50,12 84,31 84,69 50,88 16,69 16,31"
+                  stroke="rgba(0,229,255,0.22)"
+                  stroke-width="0.8"
+                  fill="none" />
+              </svg>
+
+              <!-- Inner rotating hex ring -->
+              <svg class="target-node__ring target-node__ring--inner"
+                   viewBox="0 0 100 100"
+                   fill="none"
+                   xmlns="http://www.w3.org/2000/svg">
+                <polygon
+                  points="50,20 76,35 76,65 50,80 24,65 24,35"
+                  stroke="rgba(0,229,255,0.14)"
+                  stroke-width="0.6"
+                  fill="none" />
+              </svg>
+
+              <!-- Core box -->
+              <div class="target-node__core" id="targetCore">
+                <span class="target-node__core-label">SYS</span>
+                <span class="target-node__core-sub">NODE</span>
+              </div>
+
+            </div>
+            <span class="target-node__label">TARGET NODE</span>
+          </div>
+
+          <!-- Animation layer — JS appends scan rings, breach lines here -->
+          <div class="bf-anim-layer" id="bfAnimLayer"></div>
+
+        </div><!-- /.battlefield -->
+      </div><!-- /.panel--battlefield -->
+
+      <!-- Last engagement -->
+      <div class="panel panel--sys panel--engagement">
+        <span class="corner corner--tl"></span>
+        <span class="corner corner--tr"></span>
+        <span class="corner corner--bl"></span>
+        <span class="corner corner--br"></span>
+
+        <div class="panel-title panel-title--sys">
+          <span class="panel-title__dot"></span>
+          LAST ENGAGEMENT
+        </div>
+
+        <div class="engagement-layout">
+          <div class="engagement-layout__atk">
+            <span class="engagement__sublabel engagement__sublabel--atk">
+              ATTACK
+            </span>
+            <span class="engagement__value engagement__value--atk mono"
+                  id="lastAtkName">—</span>
+          </div>
+
+          <span class="engagement-layout__vs">VS</span>
+
+          <div class="engagement-layout__def">
+            <span class="engagement__sublabel engagement__sublabel--def">
+              DEFENSE
+            </span>
+            <span class="engagement__value engagement__value--def mono"
+                  id="lastDefName">—</span>
+          </div>
+        </div>
+
+        <div class="engagement-footer">
+          <!-- Outcome chip -->
+          <span class="outcome-chip" id="outcomeChip">—</span>
+
+          <!-- Reward badges -->
+          <div class="engagement-footer__rewards">
+            <div class="engagement-footer__reward-pair">
+              <span class="engagement-footer__reward-label">ATK</span>
+              <span class="reward-badge" id="atkReward">—</span>
+            </div>
+            <div class="engagement-footer__reward-pair">
+              <span class="engagement-footer__reward-label">DEF</span>
+              <span class="reward-badge" id="defReward">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="panel panel--sys panel--timeline">
+        <span class="corner corner--tl"></span>
+        <span class="corner corner--tr"></span>
+        <span class="corner corner--bl"></span>
+        <span class="corner corner--br"></span>
+
+        <div class="panel-title panel-title--sys">
+          <span class="panel-title__dot"></span>
+          BATTLE TIMELINE
+        </div>
+
+        <div class="timeline" id="timeline">
+          <!-- Chips appended by app.js -->
+        </div>
+      </div>
+
+      <!-- Combat log -->
+      <div class="panel panel--sys panel--combat-log panel--grow">
+        <span class="corner corner--tl"></span>
+        <span class="corner corner--tr"></span>
+        <span class="corner corner--bl"></span>
+        <span class="corner corner--br"></span>
+
+        <div class="panel-title panel-title--sys">
+          <span class="panel-title__dot"></span>
+          LIVE COMBAT FEED
+        </div>
+
+        <div class="combat-log" id="combatLog">
+          <!-- Entries prepended by app.js -->
+        </div>
+      </div>
+
+    </main>
+
+
+    <!-- ====================================================
+         RIGHT COLUMN — DEFENDER AGENT
+    ==================================================== -->
+    <aside class="hud__right">
+
+      <!-- Agent info panel -->
+      <div class="panel panel--def panel--def-agent">
+        <span class="corner corner--tl"></span>
+        <span class="corner corner--tr"></span>
+        <span class="corner corner--bl"></span>
+        <span class="corner corner--br"></span>
+
+        <div class="panel-title panel-title--def">
+          <span class="panel-title__dot"></span>
+          DEFENDER AGENT
+        </div>
+
+        <!-- Current action display -->
+        <div class="action-display action-display--def"
+             id="defActionDisplay">
+          <span class="action-display__label">ACTIVE DEFENSE</span>
+          <span class="action-display__value mono"
+                id="defActionVal">STANDBY</span>
+        </div>
+
+        <!-- Stat row -->
+        <div class="stat-row">
+          <div class="stat-box">
+            <span class="stat-box__value text-def"
+                  id="defBlocks">0</span>
+            <span class="stat-box__label">BLOCKS</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-box__value"
+                  id="defRate">0%</span>
+            <span class="stat-box__label">BLOCK RATE</span>
+          </div>
+        </div>
+
+        <!-- Probability bars -->
+        <span class="section-label">DEFENSE PROBABILITY</span>
+        <div class="prob-bars" id="defProbBars">
+          <!-- Populated by app.js -->
+        </div>
+      </div>
+
+      <!-- Q-table heatmap panel -->
+      <div class="panel panel--def panel--def-qtable">
+        <span class="corner corner--tl"></span>
+        <span class="corner corner--tr"></span>
+        <span class="corner corner--bl"></span>
+        <span class="corner corner--br"></span>
+
+        <div class="panel-title panel-title--def">
+          <span class="panel-title__dot"></span>
+          Q-TABLE // DEFENDER
+        </div>
+
+        <div class="qtable-wrap">
+          <div class="qtable" id="defQtable">
+            <!-- Populated by app.js -->
+          </div>
+          <div class="qtable-legend">
+            <span class="qtable-legend__label">LOW</span>
+            <div class="qtable-legend__bar qtable-legend__bar--def"></div>
+            <span class="qtable-legend__label">HIGH</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Defense distribution bar chart -->
+      <div class="panel panel--def panel--def-chart">
+        <span class="corner corner--tl"></span>
+        <span class="corner corner--tr"></span>
+        <span class="corner corner--bl"></span>
+        <span class="corner corner--br"></span>
+
+        <div class="panel-title panel-title--def">
+          <span class="panel-title__dot"></span>
+          DEFENSE DISTRIBUTION
+        </div>
+
+        <div class="bar-chart" id="defChart">
+          <!-- Populated by app.js -->
+        </div>
+      </div>
+
+    </aside>
+
+
+    <!-- ====================================================
+         BOTTOM BAR
+    ==================================================== -->
+    <footer class="hud__bottombar bottombar">
+
+      <!-- Controls panel -->
+      <div class="panel panel--sys panel--controls bottombar__controls">
+        <span class="corner corner--tl"></span>
+        <span class="corner corner--tr"></span>
+        <span class="corner corner--bl"></span>
+        <span class="corner corner--br"></span>
+
+        <div class="panel-title panel-title--sys">
+          <span class="panel-title__dot"></span>
+          COMMAND CENTER
+        </div>
+
+        <div class="controls-layout">
+          <!-- Primary buttons -->
+          <button class="btn btn--run"
+                  id="btnRun"
+                  title="Run one round">
+            ▶ RUN ROUND
+          </button>
+
+          <button class="btn btn--auto"
+                  id="btnAuto"
+                  title="Toggle auto-run mode">
+            ⟳ AUTO MODE
+          </button>
+
+          <button class="btn btn--pause"
+                  id="btnPause"
+                  title="Pause auto-run"
+                  disabled>
+            ⏸ PAUSE
+          </button>
+
+          <button class="btn btn--reset"
+                  id="btnReset"
+                  title="Reset simulation">
+            ↺ RESET
+          </button>
+
+          <div class="controls-layout__sep"></div>
+
+          <!-- Speed control -->
+          <div class="speed-control">
+            <span class="speed-control__label">SPEED</span>
+            <input class="speed-control__slider"
+                   type="range"
+                   id="speedSlider"
+                   min="100"
+                   max="2000"
+                   step="100"
+                   value="1000" />
+            <span class="speed-control__value mono"
+                  id="speedLabel">1.0s</span>
+          </div>
+        </div>
+
+            <!-- Exploration control -->
+    <div class="controls-epsilon">
+
+      <div class="epsilon-section">
+
+        <div class="epsilon-section__header">
+          <span class="epsilon-section__title">
+            EXPLORATION RATE (ε)
+          </span>
+
+          <span class="epsilon-section__value mono"
+                id="epsilonValue">90%</span>
+
+          <span class="epsilon-section__meta">
+            — agents exploring randomly
+          </span>
+        </div>
+
+        <!-- NEW SLIDER -->
+        <input
+          class="epsilon-slider"
+          type="range"
+          id="epsilonSlider"
+          min="0"
+          max="1"
+          step="0.01"
+          value="0.9"
+        />
+
+      </div>
+
+</div>
+      <!-- Trend chart panel -->
+      <div class="panel panel--sys panel--trend bottombar__trend">
+        <span class="corner corner--tl"></span>
+        <span class="corner corner--tr"></span>
+        <span class="corner corner--bl"></span>
+        <span class="corner corner--br"></span>
+
+        <div class="panel-title panel-title--sys">
+          <span class="panel-title__dot"></span>
+          SUCCESS RATE TREND
+        </div>
+
+        <div class="trend-chart-wrap">
+          <canvas id="trendChart"></canvas>
+        </div>
+
+        <div class="trend-legend">
+          <div class="trend-legend__item">
+            <span class="trend-legend__dot trend-legend__dot--atk"></span>
+            <span class="trend-legend__label">BREACH %</span>
+          </div>
+          <div class="trend-legend__item">
+            <span class="trend-legend__dot trend-legend__dot--def"></span>
+            <span class="trend-legend__label">BLOCK %</span>
+          </div>
+        </div>
+      </div>
+
+    </footer>
+
+  </div><!-- /.hud -->
+
+
+  <!-- ======================================================
+       CHART.JS — loaded before app.js
+  ====================================================== -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+
+  <!-- ======================================================
+       APP SCRIPT
+  ====================================================== -->
+  <script src="app.js"></script>
+
+</body>
+</html>
